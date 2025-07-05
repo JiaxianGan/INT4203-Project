@@ -1,18 +1,17 @@
 import pandas as pd
-import requests
 import numpy as np
-import json
+import google.generativeai as genai
 
+# Load Gemini Flash
+genai.configure(api_key="AIzaSyD7x0Qa3OixdUBqWhPn8W2glp0OhKZXIxI")
+model = genai.GenerativeModel('gemini-2.0-flash')
 
+# --- Step 1: Load price trend data ---
+price_data = pd.read_csv("klci_20250704_close_prices.csv", index_col=0, parse_dates=True)
 
-# --- Step 1: Load stock data CSV ---
-data = pd.read_csv("klci_20250704_close_prices.csv", index_col=0, parse_dates=True)
-
-# --- Step 2: Generate summary info ---
 summary = {}
-
-for ticker in data.columns:
-    prices = data[ticker].dropna()
+for ticker in price_data.columns:
+    prices = price_data[ticker].dropna()
     if len(prices) < 2:
         continue
 
@@ -34,26 +33,27 @@ for ticker in data.columns:
         "1M_change": round(monthly_change, 2)
     }
 
-# --- Step 3: Ask Ollama using deepseek-r1 ---
-def ask_ollama(prompt):
-    try:
-        response = requests.post(
-            "http://localhost:11434/api/generate",
-            json={
-                "model": "deepseek-r1",
-                "prompt": prompt,
-                "stream": False  # Disable streaming to fix JSON error
-            }
-        )
-        result = response.json()
-        return result["response"]
-    except json.JSONDecodeError as e:
-        print("⚠️ JSON decode error:", e)
-        print("Raw response:", response.text)
-        return "Sorry, I couldn't understand the response from the LLM."
+# --- Step 2: Load fundamental data from CSV ---
+fundamentals_df = pd.read_csv("fundamentals.csv", index_col="Ticker")
 
-# --- Step 4: Format stock summary + user input ---
-def generate_stock_prompt(user_question, summary):
+# --- Step 3: Get fundamentals from loaded CSV ---
+def get_fundamental_metrics(ticker):
+    try:
+        row = fundamentals_df.loc[ticker]
+        return {
+            "Price": f"RM {row['Price']}",
+            "EPS": row['EPS'],
+            "PE Ratio": row['PE'],
+            "ROE": f"{row['ROE']}%",
+            "P/B Ratio": row['PB'],
+            "Dividend Yield": f"{row['DividendYield']}%",
+            "Market Cap": f"{row['MarketCap']}"
+        }
+    except KeyError:
+        return {"Note": "No fundamental data found for this ticker."}
+
+# --- Step 4: Generate full prompt ---
+def generate_prompt(user_question, summary):
     stock_info_text = ""
     for ticker, info in summary.items():
         stock_info_text += (
@@ -61,33 +61,49 @@ def generate_stock_prompt(user_question, summary):
             f"{info['1M_change']}% over 1M, trend: {info['1M_trend']})\n"
         )
 
+    # Try to find mentioned ticker
+    first_ticker = None
+    for code in summary.keys():
+        if code in user_question:
+            first_ticker = code
+            break
+
+    metrics_text = ""
+    if first_ticker:
+        metrics = get_fundamental_metrics(first_ticker)
+        metrics_text += f"\n📊 Value Investing Metrics for {first_ticker}:\n"
+        for k, v in metrics.items():
+            metrics_text += f"- {k}: {v}\n"
+
     prompt = (
-        "You are a helpful financial advisory assistant focused on Malaysian KLCI stocks.\n"
-        "Here is the latest stock summary for key tickers:\n\n"
+        "You are a financial assistant helping with Malaysian KLCI stocks.\n"
+        "Use the price trend and fundamental data to provide clear analysis.\n\n"
+        "📉 Price Summary:\n"
         f"{stock_info_text}\n"
+        f"{metrics_text}\n"
         f"User asked: {user_question}\n"
-        "Give a clear and relevant response based on the trend and data above.\n"
+        "Provide value-investing-based insights, and help the user decide based on metrics like PE, ROE, EPS."
     )
     return prompt
 
-# --- Step 5: Complete chatbot function ---
+# --- Step 5: Chatbot function ---
 def stock_llm_chatbot(user_input):
-    prompt = generate_stock_prompt(user_input, summary)
-    response = ask_ollama(prompt)
-    return response.strip()
+    prompt = generate_prompt(user_input, summary)
+    response = model.generate_content(prompt)
+    return response.text.strip()
 
-# --- Step 6: Interactive console chatbot ---
+# --- Step 6: Terminal interface ---
 if __name__ == "__main__":
-    print("💬 Stock Advisory Chatbot (powered by DeepSeek via Ollama)")
+    print("📈 Gemini Flash Stock ChatBot (with fundamental data)")
     print("Type 'exit' to quit.\n")
     while True:
         try:
-            user_question = input("You: ")
-            if user_question.lower() in ["exit", "quit"]:
-                print("👋 Bye!")
+            user_input = input("You: ")
+            if user_input.lower() in ["exit", "quit"]:
+                print("👋 Exiting...")
                 break
-            answer = stock_llm_chatbot(user_question)
+            answer = stock_llm_chatbot(user_input)
             print("Bot:", answer, "\n")
         except KeyboardInterrupt:
-            print("\n👋 Bye!")
+            print("\n👋 Goodbye!")
             break

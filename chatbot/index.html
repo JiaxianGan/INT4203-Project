@@ -1,49 +1,861 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>StockBot</title>
-  <link rel="stylesheet" href="style.css" />
-  
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+    <title>StockBot</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background-color: #ffffff;
+            color: #374151;
+            height: 100vh;
+            overflow: hidden;
+        }
+
+        .dark-mode {
+            background-color: #1f2937;
+            color: #e5e7eb;
+        }
+
+        /* Main Content */
+        .main-content {
+            margin-left: 0;
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+        }
+
+        /* Header */
+        .header {
+            background-color: #ffffff;
+            border-bottom: 1px solid #e5e7eb;
+            padding: 16px 24px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            min-height: 64px;
+        }
+
+        .dark-mode .header {
+            background-color: #1f2937;
+            border-bottom: 1px solid #374151;
+        }
+
+        .header-left {
+            display: flex;
+            align-items: center;
+            gap: 16px;
+        }
+
+        .header-right {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .theme-toggle {
+            background: none;
+            border: none;
+            cursor: pointer;
+            padding: 8px;
+            border-radius: 8px;
+            transition: background-color 0.2s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            position: relative;
+            width: 40px;
+            height: 40px;
+        }
+
+        .theme-toggle:hover {
+            background-color: #f3f4f6;
+        }
+
+        .dark-mode .theme-toggle:hover {
+            background-color: #374151;
+        }
+
+        .theme-toggle .sun-icon {
+            color: #f59e0b;
+        }
+
+        .theme-toggle .moon-icon {
+            color: #6366f1;
+            display: none;
+        }
+
+        .dark-mode .theme-toggle .sun-icon {
+            display: none;
+        }
+
+        .dark-mode .theme-toggle .moon-icon {
+            display: block;
+        }
+
+        .new-chat-btn {
+            background-color: #3b82f6;
+            color: white;
+            border: none;
+            padding: 8px 16px;
+            border-radius: 8px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 14px;
+            font-weight: 500;
+            transition: background-color 0.2s;
+        }
+
+        .new-chat-btn:hover {
+            background-color: #2563eb;
+        }
+
+        .sidebar-toggle-main {
+            background: none;
+            border: none;
+            cursor: pointer;
+            padding: 8px;
+            border-radius: 6px;
+            transition: background-color 0.2s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .sidebar-toggle-main:hover {
+            background-color: #f3f4f6;
+        }
+
+        .dark-mode .sidebar-toggle-main:hover {
+            background-color: #374151;
+        }
+
+        .header h1 {
+            font-size: 18px;
+            font-weight: 600;
+            color: #1f2937;
+        }
+
+        .dark-mode .header h1 {
+            color: #e5e7eb;
+        }
+
+        /* Chat Container */
+        .chat-container {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+
+        .chat-messages {
+            flex: 1;
+            overflow-y: auto;
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
+        }
+
+        .welcome-message {
+            text-align: center;
+            margin-top: auto;
+            margin-bottom: auto;
+            padding: 40px 20px;
+        }
+
+        .welcome-message h2 {
+            font-size: 24px;
+            font-weight: 600;
+            margin-bottom: 8px;
+            color: #1f2937;
+        }
+
+        .dark-mode .welcome-message h2 {
+            color: #e5e7eb;
+        }
+
+        .welcome-message p {
+            font-size: 16px;
+            color: #6b7280;
+            margin-bottom: 24px;
+        }
+
+        .dark-mode .welcome-message p {
+            color: #9ca3af;
+        }
+
+        /* Message Container - Centered with max-width */
+        .message {
+            max-width: 768px;
+            margin: 0 auto;
+            width: 100%;
+            padding: 8px 0;
+        }
+
+        .message-content {
+            display: flex;
+            gap: 12px;
+            align-items: flex-start;
+        }
+
+        /* User Messages - Left aligned */
+        .message.user .message-content {
+            flex-direction: row;
+        }
+
+        .message.user .message-bubble {
+            background-color: #3b82f6;
+            color: white;
+            border-radius: 18px;
+            padding: 12px 16px;
+            max-width: 70%;
+            word-wrap: break-word;
+        }
+
+        /* Bot Messages - Right aligned */
+        .message.bot .message-content {
+            flex-direction: row-reverse;
+        }
+
+        .message.bot .message-bubble {
+            background-color: #f9fafb;
+            color: #374151;
+            border-radius: 18px;
+            padding: 12px 16px;
+            max-width: 70%;
+            word-wrap: break-word;
+            border: 1px solid #e5e7eb;
+        }
+
+        .dark-mode .message.bot .message-bubble {
+            background-color: #111827;
+            border-color: #374151;
+            color: #e5e7eb;
+        }
+
+        .message-avatar {
+            width: 32px;
+            height: 32px;
+            border-radius: 50%;
+            background-color: #3b82f6;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-weight: 600;
+            font-size: 14px;
+            flex-shrink: 0;
+        }
+
+        .message.bot .message-avatar {
+            background-color: #10b981;
+        }
+
+        .message-text {
+            line-height: 1.6;
+        }
+
+        /* Message text formatting */
+        .message-text p {
+            margin-bottom: 12px;
+        }
+
+        .message-text p:last-child {
+            margin-bottom: 0;
+        }
+
+        .message-text strong {
+            font-weight: 600;
+        }
+
+        .message.user .message-text strong {
+            color: #ffffff;
+        }
+
+        .message.bot .message-text strong {
+            color: #1f2937;
+        }
+
+        .dark-mode .message.bot .message-text strong {
+            color: #e5e7eb;
+        }
+
+        .message-text ul, .message-text ol {
+            margin: 12px 0;
+            padding-left: 20px;
+        }
+
+        .message-text li {
+            margin-bottom: 4px;
+        }
+
+        .message-text .highlight {
+            background-color: #fef3c7;
+            padding: 2px 4px;
+            border-radius: 3px;
+            font-weight: 500;
+        }
+
+        .dark-mode .message-text .highlight {
+            background-color: #451a03;
+            color: #fbbf24;
+        }
+
+        .message-text .disclaimer {
+            background-color: #fef2f2;
+            border: 1px solid #fecaca;
+            border-radius: 6px;
+            padding: 12px;
+            margin-top: 16px;
+            font-size: 14px;
+            color: #dc2626;
+        }
+
+        .dark-mode .message-text .disclaimer {
+            background-color: #1f1c1c;
+            border-color: #7f1d1d;
+            color: #f87171;
+        }
+
+        /* Chat Input */
+        .chat-input-container {
+            padding: 20px;
+            border-top: 1px solid #e5e7eb;
+            background-color: #ffffff;
+        }
+
+        .dark-mode .chat-input-container {
+            border-top: 1px solid #374151;
+            background-color: #1f2937;
+        }
+
+        .chat-input-wrapper {
+            max-width: 768px;
+            margin: 0 auto;
+            position: relative;
+        }
+
+        .chat-form {
+            display: flex;
+            gap: 12px;
+            align-items: flex-end;
+        }
+
+        .chat-input {
+            flex: 1;
+            padding: 12px 16px;
+            border: 1px solid #e5e7eb;
+            border-radius: 12px;
+            background-color: #ffffff;
+            font-size: 16px;
+            line-height: 1.5;
+            resize: none;
+            min-height: 48px;
+            max-height: 200px;
+            outline: none;
+            transition: border-color 0.2s;
+        }
+
+        .chat-input:focus {
+            border-color: #3b82f6;
+            box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+        }
+
+        .dark-mode .chat-input {
+            background-color: #1f2937;
+            border-color: #374151;
+            color: #e5e7eb;
+        }
+
+        .dark-mode .chat-input:focus {
+            border-color: #3b82f6;
+            box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+        }
+
+        .send-button {
+            padding: 12px 20px;
+            background-color: #3b82f6;
+            color: white;
+            border: none;
+            border-radius: 12px;
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: background-color 0.2s;
+            white-space: nowrap;
+        }
+
+        .send-button:hover {
+            background-color: #2563eb;
+        }
+
+        .send-button:disabled {
+            background-color: #9ca3af;
+            cursor: not-allowed;
+        }
+
+        .disclaimer {
+            text-align: center;
+            font-size: 12px;
+            color: #6b7280;
+            margin-top: 12px;
+        }
+
+        .dark-mode .disclaimer {
+            color: #9ca3af;
+        }
+
+        /* Icons */
+        .icon {
+            width: 20px;
+            height: 20px;
+            fill: currentColor;
+        }
+
+        /* Responsive */
+        @media (max-width: 768px) {
+            .chat-messages {
+                padding: 12px;
+            }
+            
+            .message.user .message-bubble,
+            .message.bot .message-bubble {
+                max-width: 85%;
+            }
+            
+            .chat-input-container {
+                padding: 12px;
+            }
+
+            .header {
+                padding: 12px 16px;
+            }
+
+            .new-chat-btn {
+                padding: 6px 12px;
+                font-size: 12px;
+            }
+        }
+
+        /* Custom scrollbar */
+        ::-webkit-scrollbar {
+            width: 6px;
+        }
+
+        ::-webkit-scrollbar-track {
+            background: transparent;
+        }
+
+        ::-webkit-scrollbar-thumb {
+            background: #d1d5db;
+            border-radius: 3px;
+        }
+
+        .dark-mode ::-webkit-scrollbar-thumb {
+            background: #4b5563;
+        }
+
+        /* Loading animation */
+        .typing-indicator {
+            display: flex;
+            align-items: center;
+            gap: 4px;
+            padding: 8px 0;
+        }
+
+        .typing-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background-color: #6b7280;
+            animation: typing 1.4s infinite ease-in-out;
+        }
+
+        .typing-dot:nth-child(1) { animation-delay: -0.32s; }
+        .typing-dot:nth-child(2) { animation-delay: -0.16s; }
+
+        @keyframes typing {
+            0%, 80%, 100% { transform: scale(0.8); opacity: 0.5; }
+            40% { transform: scale(1); opacity: 1; }
+        }
+    </style>
 </head>
 <body class="light-mode">
-  <div class="top-bar">
-    <!-- Sidebar open button -->
-    <button id="sidebar-open-btn" class="sidebar-open-btn" title="Open sidebar" style="margin-right: 1rem;">
-        <img src="icon/sidebar.png" alt="Open Sidebar" />
-    </button>
-    <h4 style="margin: 0;">Stock Advisor ChatBot</h4>
-  </div>
+    <!-- Main Content -->
+    <div id="main-content" class="main-content">
+        <!-- Header -->
+        <header class="header">
+            <div class="header-left">
+                <h1>Stock Advisor ChatBot</h1>
+            </div>
+            <div class="header-right">
+                <button id="theme-toggle" class="theme-toggle" title="Toggle dark/light mode">
+                    <svg class="icon sun-icon" viewBox="0 0 24 24">
+                        <path d="M12 7a5 5 0 1 0 0 10 5 5 0 0 0 0-10zM2 13h2a1 1 0 0 0 0-2H2a1 1 0 0 0 0 2zm18 0h2a1 1 0 0 0 0-2h-2a1 1 0 0 0 0 2zM11 2v2a1 1 0 0 0 2 0V2a1 1 0 0 0-2 0zm0 18v2a1 1 0 0 0 2 0v-2a1 1 0 0 0-2 0zM5.99 4.58a1 1 0 0 0-1.41 1.41l1.06 1.06a1 1 0 0 0 1.41-1.41L5.99 4.58zm12.37 12.37a1 1 0 0 0-1.41 1.41l1.06 1.06a1 1 0 0 0 1.41-1.41l-1.06-1.06zm1.06-10.96a1 1 0 0 0-1.41-1.41l-1.06 1.06a1 1 0 0 0 1.41 1.41l1.06-1.06zM7.05 18.36a1 1 0 0 0-1.41-1.41l-1.06 1.06a1 1 0 0 0 1.41 1.41l1.06-1.06z"/>
+                    </svg>
+                    <svg class="icon moon-icon" viewBox="0 0 24 24">
+                        <path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z"/>
+                    </svg>
+                </button>
+                <button id="new-chat-btn" class="new-chat-btn">
+                    <svg class="icon" viewBox="0 0 24 24">
+                        <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm5 11h-4v4h-2v-4H7v-2h4V7h2v4h4v2z"/>
+                    </svg>
+                    <span>New Chat</span>
+                </button>
+            </div>
+        </header>
 
-  <!-- Sidebar Start -->
-  <div id="sidebar" class="sidebar">
-    <button id="sidebar-toggle" class="sidebar-toggle" title="Close sidebar">
-        <img src="icon/sidebar.png" alt="Close Sidebar" />
-    </button>
-    <button id="new-chat-btn" class="sidebar-btn">
-        <img src="icon/new_chat.png" alt="New Chat" />
-        <span>New Chat</span>
-    </button>
-    <input type="text" id="search-chat-input" placeholder="Search chats..." />
-    <ul id="chat-history-list" class="chat-history-list">
-      <!-- Example chat history items -->
-      <li>Example</li>
-    </ul>
-  </div>
-  <!-- Sidebar End -->
-  <div id="chat-container">
-    <div id="chat-log"></div>
-  </div>
-  <!-- Add your custom content here above the chat input -->
-  <div id="chat-input-above">
-    <h3>Ready when you are.</h3>
-  </div>
-  <form id="chat-form">
-    <input type="text" id="chat-input" placeholder="Ask me about stocks..." autocomplete="off"/>
-    <button type="submit">Send</button>
-  </form>
+        <!-- Chat Container -->
+        <div class="chat-container">
+            <div id="chat-messages" class="chat-messages">
+                <div class="welcome-message">
+                    <h2>Ready when you are.</h2>
+                    <p>Ask me about stocks, market analysis, or investment strategies.</p>
+                </div>
+            </div>
 
-  <script src="script.js"></script>
+            <!-- Chat Input -->
+            <div class="chat-input-container">
+                <div class="chat-input-wrapper">
+                    <form id="chat-form" class="chat-form">
+                        <textarea 
+                            id="chat-input" 
+                            class="chat-input" 
+                            placeholder="Ask me about stocks..."
+                            rows="1"
+                            autocomplete="off"
+                        ></textarea>
+                        <button type="submit" class="send-button">Send</button>
+                    </form>
+                    <p class="disclaimer">
+                        <strong>Disclaimer:</strong> The stock market is volatile and your investments are at your own risk.
+                    </p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // DOM Elements
+        const chatForm = document.getElementById('chat-form');
+        const chatInput = document.getElementById('chat-input');
+        const chatMessages = document.getElementById('chat-messages');
+        const newChatBtn = document.getElementById('new-chat-btn');
+        const themeToggle = document.getElementById('theme-toggle');
+        const body = document.body;
+
+        // Theme management
+        function initTheme() {
+            const savedTheme = localStorage.getItem('theme') || 'light';
+            if (savedTheme === 'dark') {
+                body.classList.remove('light-mode');
+                body.classList.add('dark-mode');
+            } else {
+                body.classList.remove('dark-mode');
+                body.classList.add('light-mode');
+            }
+        }
+
+        function toggleTheme() {
+            if (body.classList.contains('dark-mode')) {
+                body.classList.remove('dark-mode');
+                body.classList.add('light-mode');
+                localStorage.setItem('theme', 'light');
+            } else {
+                body.classList.remove('light-mode');
+                body.classList.add('dark-mode');
+                localStorage.setItem('theme', 'dark');
+            }
+        }
+
+        // Initialize theme on load
+        initTheme();
+
+        // Theme toggle event listener
+        themeToggle.addEventListener('click', toggleTheme);
+
+        // Helper to set chat-active class when there are messages
+        function updateChatActiveState() {
+            if (chatMessages.children.length > 0 && !document.querySelector('.welcome-message')) {
+                body.classList.add("chat-active");
+            } else {
+                body.classList.remove("chat-active");
+            }
+        }
+
+        // Auto-resize textarea
+        chatInput.addEventListener('input', function() {
+            this.style.height = 'auto';
+            this.style.height = Math.min(this.scrollHeight, 200) + 'px';
+        });
+
+        // Format text with proper paragraphs and styling
+        function formatMessage(text) {
+            // Split by double asterisks for sections
+            let formattedText = text.replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>');
+            
+            // Split by double line breaks for paragraphs
+            let paragraphs = formattedText.split('\n\n');
+            
+            // Process each paragraph
+            paragraphs = paragraphs.map(paragraph => {
+                paragraph = paragraph.trim();
+                if (!paragraph) return '';
+                
+                // Handle bullet points
+                if (paragraph.includes('•') || paragraph.includes('-')) {
+                    let lines = paragraph.split('\n');
+                    let listItems = lines.map(line => {
+                        line = line.trim();
+                        if (line.startsWith('•') || line.startsWith('-')) {
+                            return `<li>${line.substring(1).trim()}</li>`;
+                        }
+                        return line;
+                    }).filter(line => line);
+                    
+                    if (listItems.some(item => item.startsWith('<li>'))) {
+                        return `<ul>${listItems.join('')}</ul>`;
+                    }
+                }
+                
+                // Handle special disclaimers
+                if (paragraph.toLowerCase().includes('disclaimer') || 
+                    paragraph.toLowerCase().includes('not constitute financial advice')) {
+                    return `<div class="disclaimer">${paragraph}</div>`;
+                }
+                
+                return `<p>${paragraph}</p>`;
+            }).filter(p => p);
+            
+            return paragraphs.join('');
+        }
+
+        // Create typing indicator
+        function createTypingIndicator() {
+            const typingDiv = document.createElement('div');
+            typingDiv.className = 'typing-indicator';
+            typingDiv.innerHTML = `
+                <div class="typing-dot"></div>
+                <div class="typing-dot"></div>
+                <div class="typing-dot"></div>
+            `;
+            return typingDiv;
+        }
+
+        // Chat form submission logic
+        chatForm.addEventListener("submit", async (e) => {
+            e.preventDefault();
+            const userMsg = chatInput.value.trim();
+            if (!userMsg) return;
+
+            addMessage("user", userMsg);
+            chatInput.value = "";
+            chatInput.style.height = 'auto';
+
+            // Show typing indicator
+            const botMsgElem = document.createElement("div");
+            botMsgElem.classList.add("message", "bot");
+            botMsgElem.innerHTML = `
+                <div class="message-content">
+                    <div class="message-avatar">🤖</div>
+                    <div class="message-bubble">
+                        <div class="message-text">
+                            <div class="typing-indicator">
+                                <div class="typing-dot"></div>
+                                <div class="typing-dot"></div>
+                                <div class="typing-dot"></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            `;
+            chatMessages.appendChild(botMsgElem);
+            chatMessages.scrollTop = chatMessages.scrollHeight;
+
+            try {
+                const res = await fetch("http://localhost:5000/chat", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({ message: userMsg }),
+                });
+
+                const data = await res.json();
+                const reply = data.reply || "Sorry, I didn't get a response.";
+                
+                // Format and display the reply
+                const formattedReply = formatMessage(reply);
+                botMsgElem.querySelector(".message-text").innerHTML = formattedReply;
+                
+            } catch (err) {
+                console.error("Error fetching reply:", err);
+                // Fallback to local stock advisory logic
+                const fallbackReply = generateBotReply(userMsg);
+                const formattedReply = formatMessage(fallbackReply);
+                botMsgElem.querySelector(".message-text").innerHTML = formattedReply;
+            }
+
+            updateChatActiveState();
+        });
+
+        // Add message to chat
+        function addMessage(sender, text) {
+            // Remove welcome message if it exists
+            const welcomeMessage = document.querySelector('.welcome-message');
+            if (welcomeMessage) {
+                welcomeMessage.remove();
+            }
+
+            const messageDiv = document.createElement('div');
+            messageDiv.className = `message ${sender}`;
+            
+            const formattedText = sender === 'bot' ? formatMessage(text) : text;
+            
+            messageDiv.innerHTML = `
+                <div class="message-content">
+                    <div class="message-avatar">
+                        ${sender === 'user' ? '🧑' : '🤖'}
+                    </div>
+                    <div class="message-bubble">
+                        <div class="message-text">${formattedText}</div>
+                    </div>
+                </div>
+            `;
+            
+            chatMessages.appendChild(messageDiv);
+            chatMessages.scrollTop = chatMessages.scrollHeight;
+            updateChatActiveState();
+        }
+
+        // Enhanced fallback bot reply function
+        function generateBotReply(msg) {
+            const lowerMsg = msg.toLowerCase();
+            
+            if (lowerMsg.includes("apple") || lowerMsg.includes("aapl")) {
+                return `**Apple Inc. (AAPL) Analysis**
+
+Apple Inc. is a major technology company known for its innovative products including iPhone, iPad, Mac, and services ecosystem.
+
+**Key Highlights:**
+• Strong brand loyalty and ecosystem
+• Consistent revenue growth from services
+• Leading position in premium smartphone market
+• Strong cash position for investments and dividends
+
+**Considerations:**
+• High valuation compared to traditional metrics
+• Dependence on iPhone sales
+• Competitive pressure in various markets
+
+**Disclaimer:** This is a demo response for educational purposes only. Always conduct thorough research and consult with qualified financial advisors before making investment decisions.`;
+            }
+            
+            if (lowerMsg.includes("tesla") || lowerMsg.includes("tsla")) {
+                return `**Tesla Inc. (TSLA) Analysis**
+
+Tesla Inc. is a leading electric vehicle and clean energy company pioneering the transition to sustainable transportation.
+
+**Key Highlights:**
+• Market leader in electric vehicles
+• Growing energy storage and solar business
+• Strong technological advantages in batteries and autonomous driving
+• Expanding global manufacturing capacity
+
+**Considerations:**
+• High volatility and valuation concerns
+• Intense competition in EV market
+• Regulatory and supply chain risks
+
+**Disclaimer:** This is a demo response for educational purposes only. The stock market is volatile and investments carry risk. Always consult with qualified financial advisors.`;
+            }
+            
+            if (lowerMsg.includes("microsoft") || lowerMsg.includes("msft")) {
+                return `**Microsoft Corporation (MSFT) Analysis**
+
+Microsoft Corporation is a diversified technology company with strong positions in cloud computing, productivity software, and enterprise services.
+
+**Key Highlights:**
+• Leading cloud platform with Azure
+• Strong recurring revenue from Office 365 and enterprise services
+• Successful gaming division with Xbox and content
+• Consistent dividend payments and share buybacks
+
+**Considerations:**
+• Competitive cloud market
+• Dependence on enterprise spending
+• Currency headwinds for international operations
+
+**Disclaimer:** This is a demo response for educational purposes only. Past performance does not guarantee future results. Please consult with financial advisors before investing.`;
+            }
+            
+            if (lowerMsg.includes("market") || lowerMsg.includes("analysis")) {
+                return `**General Market Analysis**
+
+The current market environment presents both opportunities and challenges for investors.
+
+**Key Factors to Consider:**
+• Economic indicators and interest rate environment
+• Sector rotation and growth vs. value dynamics
+• Geopolitical risks and market volatility
+• Corporate earnings trends and guidance
+
+**Investment Strategies:**
+• Diversification across asset classes and sectors
+• Dollar-cost averaging for long-term investing
+• Regular portfolio rebalancing
+• Risk management and position sizing
+
+**Disclaimer:** This analysis is for educational purposes only and does not constitute financial advice. Market conditions can change rapidly. Always conduct your own research and consult with qualified financial advisors before making investment decisions.`;
+            }
+            
+            return `**Welcome to Stock Advisory Demo**
+
+I'm here to help you learn about stock analysis and investment concepts. I can provide information about:
+
+• Individual stock analysis (try asking about AAPL, TSLA, or MSFT)
+• Market trends and analysis
+• Investment strategies and concepts
+• Risk management principles
+
+**Please note:** This is a demonstration chatbot for educational purposes only. All responses are simulated and should not be considered as actual financial advice.
+
+**Important:** Always conduct thorough research and consult with qualified financial advisors before making any investment decisions. The stock market carries inherent risks, and past performance does not guarantee future results.`;
+        }
+
+        // New chat functionality
+        newChatBtn.addEventListener('click', () => {
+            chatMessages.innerHTML = `
+                <div class="welcome-message">
+                    <h2>Ready when you are.</h2>
+                    <p>Ask me about stocks, market analysis, or investment strategies.</p>
+                </div>
+            `;
+            updateChatActiveState();
+        });
+
+        // Enter key handling for textarea
+        chatInput.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter' && !e.shiftKey) {
+                e.preventDefault();
+                chatForm.dispatchEvent(new Event('submit'));
+            }
+        });
+
+        // Initialize chat active state on load
+        document.addEventListener("DOMContentLoaded", () => {
+            initTheme();
+            updateChatActiveState();
+        });
+    </script>
 </body>
 </html>
