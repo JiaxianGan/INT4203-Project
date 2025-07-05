@@ -5,7 +5,7 @@ const toggleBtn = document.getElementById("toggle-theme");
 const body = document.body;
 
 // Chat form submission logic
-chatForm.addEventListener("submit", (e) => {
+chatForm.addEventListener("submit", async (e) => {
   e.preventDefault();
   const userMsg = chatInput.value.trim();
   if (!userMsg) return;
@@ -13,12 +13,30 @@ chatForm.addEventListener("submit", (e) => {
   addMessage("user", userMsg);
   chatInput.value = "";
 
-  // Simulate a bot reply (replace this with GPT response in future)
-  setTimeout(() => {
-    const botReply = generateBotReply(userMsg);
-    addMessage("bot", botReply);
-  }, 600);
+  // Show temporary bot message
+  const botMsgElem = document.createElement("div");
+  botMsgElem.classList.add("message", "bot");
+  botMsgElem.innerHTML = `<div class="bubble"><div class="avatar">🤖</div><div class="text">Thinking...</div></div>`;
+  chatLog.appendChild(botMsgElem);
+  chatLog.scrollTop = chatLog.scrollHeight;
+
+  try {
+    const res = await fetch("http://localhost:5000/chat", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ message: userMsg }),
+    });
+
+    const data = await res.json();
+    const reply = data.reply || "Sorry, I didn't get a response.";
+    botMsgElem.querySelector(".text").textContent = reply;
+  } catch (err) {
+    botMsgElem.querySelector(".text").textContent = "Error fetching reply.";
+  }
+
+  updateChatActiveState();
 });
+
 
 // Helper to set chat-active class when there are messages
 function updateChatActiveState() {
@@ -136,3 +154,10 @@ if (e.target && e.target.matches("li")) {
     // Example: chatLog.innerHTML = ...;
   }
 });
+
+function generateBotReply(msg) {
+  return "Thinking..."; // Temporary message
+
+  // The actual response will come from the backend
+}
+
